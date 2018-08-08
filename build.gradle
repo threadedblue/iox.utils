@@ -1,0 +1,48 @@
+apply plugin: 'java-library'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+
+def applicationName = "iox.utils"
+sourceCompatibility = 1.8
+
+group = "iox"
+version = '1.1.0'
+
+configure(install.repositories.mavenInstaller) {
+    pom.project {
+        groupId group
+        artifactId applicationName
+        inceptionYear '2018'
+        packaging 'jar'
+    }
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'sundry utilities', 'Implementation-Version': version
+    }
+}
+
+repositories {
+	maven {url 'file://' + new File(System.getProperty('user.home'), '.m2/repository').absolutePath;}
+	maven {url 'http://repo1.maven.org/maven2'}
+}
+
+dependencies {
+    api group: 'commons-collections', name: 'commons-collections', version: '3.2'
+    api "org.apache.logging.log4j:log4j-slf4j-impl:${logver}" 
+    
+    testCompile 'junit:junit:4.9'
+}
+
+test {
+    systemProperties 'property': 'value'
+}
+
+uploadArchives {
+    repositories {
+       flatDir {
+           dirs 'repos'
+       }
+    }
+}
