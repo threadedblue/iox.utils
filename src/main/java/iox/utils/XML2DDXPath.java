@@ -20,19 +20,19 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-public class XML2XPath implements Runnable {
+public class XML2DDXPath implements Runnable {
 
-	private static final Logger log = LoggerFactory.getLogger(XML2XPath.class);
+	private static final Logger log = LoggerFactory.getLogger(XML2DDXPath.class);
 	InputSource xml;
 	FragmentContentHandler fch;
 	List<String> xPaths = new ArrayList<String>();
 
-	public XML2XPath(String s) {
+	public XML2DDXPath(String s) {
 		xml = new InputSource(new StringReader(s));
 	}
 
 	public static void main(String[] args) throws Exception {
-		XML2XPath app = new XML2XPath(args[0]);
+		XML2DDXPath app = new XML2DDXPath(args[0]);
 		log.debug("app=" + app);
 		app.run();
 	}
