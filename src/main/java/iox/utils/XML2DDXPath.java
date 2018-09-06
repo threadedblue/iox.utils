@@ -25,20 +25,17 @@ public class XML2DDXPath implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(XML2DDXPath.class);
 	InputSource xml;
 	FragmentContentHandler fch;
-	List<String> xPaths = new ArrayList<String>();
+	XPathCallBack cb;
 
-	public XML2DDXPath(String s) {
+	public XML2DDXPath(String s, XPathCallBack cb) {
 		xml = new InputSource(new StringReader(s));
+		this.cb = cb;
 	}
 
 	public static void main(String[] args) throws Exception {
-		XML2DDXPath app = new XML2DDXPath(args[0]);
+		XML2DDXPath app = new XML2DDXPath(args[0], null);
 		log.debug("app=" + app);
 		app.run();
-	}
-
-	public List<String> getXPaths() {
-		return xPaths;
 	}
 
 	@Override
@@ -91,9 +88,8 @@ public class XML2DDXPath implements Runnable {
 
 			int attsLength = atts.getLength();
 			for (int x = 0; x < attsLength; x++) {
-				log.trace(childXPath + "[@" + atts.getQName(x) + "='" + atts.getValue(x) + "']");
-				xPaths.add(childXPath + "[@" + atts.getQName(x) + "='" + atts.getValue(x) + "']");
-				log.debug("xPaths=" + xPaths.size() + " " + xPaths.hashCode());
+				log.trace(childXPath + "@" + atts.getQName(x) + "=" + atts.getValue(x));
+				cb.process(childXPath + "@" + atts.getQName(x) + "=" + atts.getValue(x));
 			}
 
 			FragmentContentHandler child = new FragmentContentHandler(childXPath, xmlReader, this);
@@ -105,8 +101,7 @@ public class XML2DDXPath implements Runnable {
 			String value = characters.toString().trim();
 			if (value.length() > 0) {
 				log.trace(xPath + "='" + characters.toString() + "'");
-				xPaths.add(xPath + "='" + characters.toString() + "'");
-				log.debug("xPaths=" + xPaths.size() + " " + xPaths.hashCode());
+				cb.process(xPath + "='" + characters.toString() + "'");
 			}
 			xmlReader.setContentHandler(parent);
 		}
@@ -116,5 +111,4 @@ public class XML2DDXPath implements Runnable {
 			characters.append(ch, start, length);
 		}
 	}
-
 }
