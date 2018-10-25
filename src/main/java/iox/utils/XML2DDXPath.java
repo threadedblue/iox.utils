@@ -2,9 +2,7 @@ package iox.utils;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -25,11 +23,13 @@ public class XML2DDXPath implements Runnable {
 	private static final Logger log = LoggerFactory.getLogger(XML2DDXPath.class);
 	InputSource xml;
 	FragmentContentHandler fch;
-	XPathCallBack cb;
+	XPathCallBack callback;
+	boolean doingText;
+	StringBuilder textContent;
 
-	public XML2DDXPath(String s, XPathCallBack cb) {
+	public XML2DDXPath(String s, XPathCallBack callback) {
 		xml = new InputSource(new StringReader(s));
-		this.cb = cb;
+		this.callback = callback;
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -77,6 +77,7 @@ public class XML2DDXPath implements Runnable {
 
 		@Override
 		public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
+			log.debug("startElement uri=" + uri + " qName=" + qName);
 			Integer count = elementNameCount.get(qName);
 			if (null == count) {
 				count = 1;
@@ -85,30 +86,69 @@ public class XML2DDXPath implements Runnable {
 			}
 			elementNameCount.put(qName, count);
 			String childXPath = xPath + "/" + qName + "[" + count + "]";
-
-			int attsLength = atts.getLength();
-			for (int x = 0; x < attsLength; x++) {
-				log.trace(childXPath + "@" + atts.getQName(x) + "=" + atts.getValue(x));
-				cb.process(childXPath + "@" + atts.getQName(x) + "=" + atts.getValue(x));
+			if (isText(qName)) {
+				doingText = true;
+				textContent = new StringBuilder();
+				log.debug(childXPath);
 			}
-
+			if(doingText && isReference(qName)) {
+				return;
+			}
+			if (!doingText) {
+				log.debug(childXPath);
+				int attsLength = atts.getLength();
+				for (int x = 0; x < attsLength; x++) {
+					log.trace(childXPath + "@" + atts.getQName(x) + "=" + atts.getValue(x));
+					callback.process(childXPath + "@" + atts.getQName(x) + "=" + atts.getValue(x));
+				}
+			}
 			FragmentContentHandler child = new FragmentContentHandler(childXPath, xmlReader, this);
 			xmlReader.setContentHandler(child);
 		}
 
 		@Override
 		public void endElement(String uri, String localName, String qName) throws SAXException {
-			String value = characters.toString().trim();
-			if (value.length() > 0) {
-				log.trace(xPath + "='" + characters.toString() + "'");
-				cb.process(xPath + "='" + characters.toString() + "'");
+			log.debug("isText=" + isText(qName));
+			if (isText(qName)) {
+				log.trace("text-content=" + xPath + "='" + textContent.toString() + "'");
+//				callback.process(xPath + "='" + textContent.toString() + "'");
+//				textContent = new StringBuilder();
+				doingText = false;
+				callback.process(xPath);
+			} 
+			log.debug("doingText=" + doingText);
+			if (!doingText){
+				String value = characters.toString().trim();
+				if (value.length() > 0) {
+//					log.trace("content=" + xPath + "='" + characters.toString() + "'");
+//					callback.process(xPath + "='" + characters.toString() + "'");
+					callback.process(xPath);
+				}
 			}
+			log.debug("endElement qName=" + qName);
 			xmlReader.setContentHandler(parent);
 		}
 
 		@Override
 		public void characters(char[] ch, int start, int length) throws SAXException {
-			characters.append(ch, start, length);
+			String s = new String(ch);
+			if (doingText) {
+				s = s.replaceAll("\\n", "");
+//				log.trace("characters=" + s);
+				s = s.replaceAll("\\<[^\\>]*\\>","");
+				s = s.replaceAll("\\s+", " ");
+				s = s.trim();
+				textContent.append(s);
+			} else {
+				characters.append(s);
+			}
 		}
 	}
-}
+
+	boolean isText(String qName) {
+		return "text".equals(qName);
+	}
+
+	boolean isReference(String qName) {
+		return "reference".equals(qName);
+	}}

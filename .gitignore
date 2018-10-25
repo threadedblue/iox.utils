@@ -2,4 +2,9 @@ bin/
 build/
 target/
 *.log
-/.gradle/
+.gradle/
+.DS_Store/
+repos/
+attic/
+logs/
+xml2xpath/
